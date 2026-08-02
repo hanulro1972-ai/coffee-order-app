@@ -105,8 +105,12 @@ export default function MenuDetailModal({ menu, isOpen, onClose }: MenuDetailMod
         <div className="space-y-6 py-4">
           {/* Image */}
           {menu.image_url && (
-            <div className="aspect-video w-full rounded-md overflow-hidden bg-muted">
-              <img src={menu.image_url} alt={menu.name} className="w-full h-full object-cover" />
+            <div className="aspect-video w-full rounded-md overflow-hidden bg-muted flex items-center justify-center">
+              {menu.image_url.startsWith('http') || menu.image_url.startsWith('/') ? (
+                <img src={menu.image_url} alt={menu.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-7xl">{menu.image_url}</span>
+              )}
             </div>
           )}
 

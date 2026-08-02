@@ -52,7 +52,13 @@ export default function AdminMenuClient({ initialMenus }: { initialMenus: Menu[]
               <TableRow key={menu.id}>
                 <TableCell>
                   {menu.image_url ? (
-                    <img src={menu.image_url} alt={menu.name} className="w-10 h-10 object-cover rounded" />
+                    menu.image_url.startsWith('http') || menu.image_url.startsWith('/') ? (
+                      <img src={menu.image_url} alt={menu.name} className="w-10 h-10 object-cover rounded" />
+                    ) : (
+                      <div className="w-10 h-10 flex items-center justify-center text-xl bg-muted rounded">
+                        {menu.image_url}
+                      </div>
+                    )
                   ) : (
                     <div className="w-10 h-10 bg-muted rounded" />
                   )}
