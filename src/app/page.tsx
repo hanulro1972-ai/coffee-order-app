@@ -20,7 +20,7 @@ export default async function HomePage() {
     .order('created_at', { ascending: true });
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
       <h1 className="text-2xl font-bold mb-6 text-foreground">주문하기</h1>
       <MenuBoard 
         menus={menus || []} 

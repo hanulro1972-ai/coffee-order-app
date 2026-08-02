@@ -76,23 +76,25 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-6 px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="p-6 bg-secondary/30 rounded-full mb-2">
-          <ShoppingCartIcon className="h-20 w-20 text-muted-foreground/50" />
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-6 px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="p-6 bg-secondary/30 rounded-full mb-2">
+            <ShoppingCartIcon className="h-20 w-20 text-muted-foreground/50" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">장바구니가 비어있습니다</h2>
+            <p className="text-muted-foreground">맛있는 커피와 디저트를 골라보세요!</p>
+          </div>
+          <Link href="/" className={buttonVariants({ size: "lg", className: "mt-4 w-full max-w-xs rounded-full shadow-md hover:shadow-lg transition-all" })}>
+            메뉴 보러가기
+          </Link>
         </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">장바구니가 비어있습니다</h2>
-          <p className="text-muted-foreground">맛있는 커피와 디저트를 골라보세요!</p>
-        </div>
-        <Link href="/" className={buttonVariants({ size: "lg", className: "mt-4 w-full max-w-xs rounded-full shadow-md hover:shadow-lg transition-all" })}>
-          메뉴 보러가기
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6 pb-24">
       <div className="flex items-center space-x-2 mb-6">
         <Link href="/" className="p-2 -ml-2 hover:bg-muted rounded-full transition-colors">
           <ArrowLeft className="h-5 w-5" />

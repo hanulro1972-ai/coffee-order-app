@@ -25,6 +25,37 @@ Next.js 기반의 커피 주문 및 재고 관리 웹 애플리케이션입니�
 - **Database & Backend**: Supabase (PostgreSQL, Auth, Realtime)
 - **Deployment**: Vercel
 
+## 🗄️ 데이터베이스 스키마 (Database Schema)
+
+이 프로젝트는 Supabase (PostgreSQL)를 백엔드로 사용하며, 스키마 정의 및 초기 데이터 마이그레이션 파일은 `supabase/migrations/0001_initial_schema.sql`에 위치해 있습니다.
+
+### 1. 주요 테이블 구조
+
+* **`users`**: 회원 및 관리자 계정 정보 (`id`, `email`, `oauth_provider`, `role`: `GUEST`/`USER`/`ADMIN`)
+* **`store_settings`**: 매장 영업 상태 관리 (`id`, `status`: `OPEN`/`PAUSE`/`CLOSE`, `updated_at`)
+* **`menus`**: 판매 메뉴 정보 (`id`, `name`, `category`, `price`, `stock_quantity`, `is_sold_out`, `image_url`)
+* **`menu_options`**: 메뉴별 추가 옵션 (`id`, `menu_id` [FK -> `menus.id` CASCADE], `option_name`, `extra_price`)
+* **`orders`**: 주문 정보 (`id`, `user_id` [FK -> `users.id` Nullable], `guest_name`, `idempotency_key` [UNIQUE], `total_price`, `status`: `접수대기`/`제조중`/`픽업완료`/`취소됨`)
+* **`order_items`**: 주문 상세 내역 (`id`, `order_id` [FK -> `orders.id` CASCADE], `menu_id` [FK -> `menus.id` RESTRICT], `quantity`, `unit_price`, `selected_option_ids` [JSONB])
+
+### 2. ERD 관계 구조
+
+```
+[users] 1 --- (0..N) ---> [orders] (1) --- (1..N) ---> [order_items]
+                            |                              |
+                            |                              v (ON DELETE RESTRICT)
+                            +-------------------------> [menus] (1) --- (0..N) ---> [menu_options]
+                                                                       (ON DELETE CASCADE)
+```
+
+### 3. 스키마 주요 특징
+
+* **실시간 주문 및 매장 관리 (Supabase Realtime)**: `orders` 및 `store_settings` 테이블에 Supabase Realtime publication이 적용되어 대시보드 및 사용자 화면에서 새로고침 없이 실시간 데이터 수신 가능
+* **중복 주문 방지 (Idempotency Key)**: `orders.idempotency_key` 컬럼에 UNIQUE 제약 조건을 설정하여 재시도 시 중복 생성 차단
+* **비회원 손님 주문 지원**: `orders.user_id`를 Nullable로 두고 `guest_name`을 저장하여 비회원 픽업 주문 완벽 지원
+* **데이터 무결성 보호**: 메뉴 삭제 시 과거 주문 기록 보존을 위해 `order_items.menu_id`에 `ON DELETE RESTRICT` 설정
+* **유연한 옵션 저장**: `order_items.selected_option_ids`에 JSONB 타입 구조를 채택하여 복잡한 M:N 조인 테이블 없이 다중 옵션 손쉽게 저장 및 조회
+
 ## 시작하기 (Getting Started)
 
 이 프로젝트는 [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app)으로 부트스트랩되었습니다.

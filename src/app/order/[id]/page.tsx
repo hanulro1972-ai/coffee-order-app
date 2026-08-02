@@ -20,9 +20,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-center mb-8">주문 상태 확인</h1>
-      <OrderStatusTracker initialOrder={order as any} />
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="max-w-xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold text-center mb-8">주문 상태 확인</h1>
+        <OrderStatusTracker initialOrder={order as any} />
+      </div>
     </div>
   );
 }
