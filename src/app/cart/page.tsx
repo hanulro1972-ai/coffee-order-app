@@ -108,7 +108,7 @@ export default function CartPage() {
             <CardContent className="p-4 flex gap-4">
               {item.menu.image_url ? (
                 <div className="w-24 h-24 sm:w-20 sm:h-20 bg-muted rounded-xl shrink-0 overflow-hidden flex items-center justify-center shadow-sm">
-                  {item.menu.image_url.startsWith('http') || item.menu.image_url.startsWith('/') ? (
+                  {item.menu.image_url.startsWith('http') || item.menu.image_url.startsWith('/') || item.menu.image_url.startsWith('data:') ? (
                     <img src={item.menu.image_url} alt={item.menu.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl bg-white">

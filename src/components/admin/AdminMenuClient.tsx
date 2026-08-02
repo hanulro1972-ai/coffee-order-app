@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Menu } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,13 +15,18 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { PlusIcon, Trash2Icon } from 'lucide-react';
+import { PlusIcon, Trash2Icon, UploadCloudIcon, ImageIcon, XIcon, Loader2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminMenuClient({ initialMenus }: { initialMenus: Menu[] }) {
   const [menus, setMenus] = useState<Menu[]>(initialMenus);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Drag and Drop & Upload state
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -44,6 +49,83 @@ export default function AdminMenuClient({ initialMenus }: { initialMenus: Menu[]
       toast.success(`${menu.name} 품절 상태가 변경되었습니다.`);
     } else {
       toast.error('상태 변경 실패');
+    }
+  };
+
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('이미지 파일(PNG, JPG, WEBP 등)만 업로드 가능합니다.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const fileName = `menu_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+      // Supabase Storage 업로드 시도
+      const { data, error } = await supabase.storage
+        .from('menu-images')
+        .upload(fileName, file, { upsert: true });
+
+      if (!error && data) {
+        const { data: urlData } = supabase.storage
+          .from('menu-images')
+          .getPublicUrl(data.path);
+        setImageUrl(urlData.publicUrl);
+        toast.success('이미지 파일이 성공적으로 업로드되었습니다.');
+      } else {
+        // Storage 실패 시 Data URL 변환 적용
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          if (result) {
+            setImageUrl(result);
+            toast.success('이미지 파일이 첨부되었습니다.');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          setImageUrl(result);
+          toast.success('이미지 파일이 첨부되었습니다.');
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
     }
   };
 
@@ -140,7 +222,7 @@ export default function AdminMenuClient({ initialMenus }: { initialMenus: Menu[]
               <TableRow key={menu.id}>
                 <TableCell>
                   {menu.image_url ? (
-                    menu.image_url.startsWith('http') || menu.image_url.startsWith('/') ? (
+                    menu.image_url.startsWith('http') || menu.image_url.startsWith('/') || menu.image_url.startsWith('data:') ? (
                       <img src={menu.image_url} alt={menu.name} className="w-10 h-10 object-cover rounded border" />
                     ) : (
                       <div className="w-10 h-10 flex items-center justify-center text-xl bg-muted rounded border">
@@ -259,24 +341,94 @@ export default function AdminMenuClient({ initialMenus }: { initialMenus: Menu[]
               />
             </div>
 
+            {/* Drag and Drop Image Upload Area */}
             <div className="space-y-2">
-              <Label htmlFor="menu-image">이미지 URL 또는 이모지</Label>
-              <Input
-                id="menu-image"
-                placeholder="예: https://... 또는 /images/cider.png 또는 ☕"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+              <Label>메뉴 이미지 (드래그 & 드롭 업로드)</Label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
               />
-              <p className="text-xs text-muted-foreground">
-                이미지 주소(URL), 로컬 경로 또는 이모지를 입력할 수 있습니다.
-              </p>
+
+              {imageUrl ? (
+                /* Preview Container */
+                <div className="relative border rounded-lg p-2 bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center space-x-3 overflow-hidden">
+                    {imageUrl.startsWith('http') || imageUrl.startsWith('/') || imageUrl.startsWith('data:') ? (
+                      <img src={imageUrl} alt="미리보기" className="w-14 h-14 object-cover rounded-md border bg-white" />
+                    ) : (
+                      <div className="w-14 h-14 flex items-center justify-center text-3xl bg-muted rounded-md border">
+                        {imageUrl}
+                      </div>
+                    )}
+                    <div className="truncate text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground block truncate">이미지 설정 완료</span>
+                      <span className="truncate block opacity-70 max-w-[180px]">{imageUrl}</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setImageUrl('')}
+                    title="이미지 제거"
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                /* Drop Zone */
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200 ${
+                    isDragging
+                      ? 'border-primary bg-primary/10 scale-[1.01]'
+                      : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/40'
+                  }`}
+                >
+                  <div className="flex flex-col items-center justify-center space-y-2 py-2">
+                    {uploading ? (
+                      <>
+                        <Loader2Icon className="h-7 w-7 text-primary animate-spin" />
+                        <p className="text-xs text-muted-foreground font-medium">이미지 업로드 처리 중...</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="p-2.5 bg-primary/10 rounded-full text-primary">
+                          <UploadCloudIcon className="h-6 w-6" />
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-semibold text-primary">클릭하여 파일 선택</span> 또는 이미지 파일 드래그 & 드롭
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">PNG, JPG, WEBP, GIF 이미지 파일 지원</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Direct URL or Emoji Input toggle */}
+              <div className="mt-2">
+                <Input
+                  placeholder="직접 이미지 URL 주소 또는 이모지(☕) 입력 가능"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className="text-xs h-8"
+                />
+              </div>
             </div>
 
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                 취소
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting || uploading}>
                 {submitting ? '등록 중...' : '메뉴 추가 완료'}
               </Button>
             </DialogFooter>

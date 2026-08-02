@@ -67,7 +67,7 @@ export default function MenuBoard({ menus, storeStatus }: MenuBoardProps) {
             >
               <div className="aspect-square bg-muted relative overflow-hidden">
                 {menu.image_url ? (
-                  menu.image_url.startsWith('http') || menu.image_url.startsWith('/') ? (
+                  menu.image_url.startsWith('http') || menu.image_url.startsWith('/') || menu.image_url.startsWith('data:') ? (
                     <img src={menu.image_url} alt={menu.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-6xl sm:text-7xl md:text-8xl bg-white transition-transform duration-500 group-hover:scale-110">
